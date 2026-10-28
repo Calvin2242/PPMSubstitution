@@ -110,12 +110,28 @@ td input,td select{width:100%}
       <p class="err" id="impMsg"></p>
     </div>
     <div class="card">
+      <h2>Tambah PPM baru</h2>
+      <div class="row"><input id="newName" placeholder="Nama PPM"><button class="p" id="btnNew">Tambah dan isi jadual</button></div>
+      <p class="err" id="newMsg"></p>
+    </div>
+    <div class="card">
       <h2>Senarai PPM</h2>
       <div class="scroll" id="ppmList"></div>
     </div>
     <div class="card" id="gridCard" hidden>
-      <div class="row"><h2 id="gridTitle" style="margin:0;flex:1"></h2><button class="p" id="btnGridSave">Simpan jadual</button></div>
-      <p class="mut">Isi sel dengan KELAS | SUBJEK, contoh: BIJAK | PK. Kosongkan untuk padam.</p>
+      <div class="row"><h2 style="margin:0;flex:1">Edit jadual PPM</h2><button class="p" id="btnGridSave">Simpan jadual</button></div>
+      <div class="row"><label for="gName"><b>Nama</b></label><input id="gName" style="min-width:240px"></div>
+      <div class="row"><b>Isi satu blok</b>
+        <select id="bDay"><option value="Mon">Isnin</option><option value="Tue">Selasa</option><option value="Wed">Rabu</option><option value="Thu">Khamis</option><option value="Fri">Jumaat</option></select>
+        <input id="bFrom" type="number" min="1" max="10" placeholder="Mula" style="width:80px">
+        <input id="bTo" type="number" min="1" max="10" placeholder="Tamat" style="width:80px">
+        <input id="bKelas" placeholder="Kelas">
+        <input id="bSubj" placeholder="Subjek" style="width:100px">
+        <button id="btnBlock">Isi blok</button>
+        <button class="d" id="btnBlockClear">Kosongkan blok</button>
+      </div>
+      <p class="mut">Atau taip terus dalam jadual: KELAS | SUBJEK, contoh BIJAK | PK. Kosongkan sel untuk padam. Tekan Simpan jadual apabila siap.</p>
+      <p class="err" id="gMsg"></p>
       <div class="scroll" id="gridBox"></div>
     </div>
   </section>
@@ -334,7 +350,11 @@ function renderPpm(){
 }
 function openGrid(id){
   const p=ppms.find(x=>x.id===id);gridId=id;gridSlots=JSON.parse(JSON.stringify(p.slots||{}));
-  $("#gridTitle").textContent="Jadual "+p.nama;$("#gridCard").hidden=false;
+  $("#gName").value=p.nama;gmsg("");$("#gridCard").hidden=false;
+  renderGrid();$("#gridCard").scrollIntoView({behavior:"smooth"});
+}
+function gmsg(t,ok){const m=$("#gMsg");m.textContent=t;m.className=ok?"mut":"err"}
+function renderGrid(){
   let h="<table><thead><tr><th>Waktu</th>"+DAYS.map(d=>`<th>${DM[d]}</th>`).join("")+"</tr></thead><tbody>";
   for(let t=1;t<=10;t++){
     h+=`<tr><th>${t}</th>`+DAYS.map(d=>{
@@ -349,13 +369,35 @@ function openGrid(id){
     if(!s)delete gridSlots[k];
     else{const [a,b]=s.split("|");gridSlots[k]={kelas:a.trim().toUpperCase(),subjek:(b||"").trim().toUpperCase()}}
   });
-  $("#gridCard").scrollIntoView({behavior:"smooth"});
 }
+function fillBlock(clear){
+  const d=$("#bDay").value,a=parseInt($("#bFrom").value),b=parseInt($("#bTo").value),
+    kelas=$("#bKelas").value.trim().toUpperCase(),subjek=$("#bSubj").value.trim().toUpperCase();
+  gmsg("");
+  if(!(a>=1&&b>=a&&b<=maxP(d)))return gmsg("Waktu tidak sah. "+DM[d]+" ialah waktu 1 hingga "+maxP(d)+".");
+  if(!clear&&!kelas)return gmsg("Isi nama kelas.");
+  for(let t=a;t<=b;t++){const k=`${d}-${t}`;if(clear)delete gridSlots[k];else gridSlots[k]={kelas,subjek}}
+  renderGrid();gmsg("Blok dikemas kini dalam jadual. Tekan Simpan jadual untuk menyimpan.",true);
+}
+$("#btnBlock").onclick=()=>fillBlock(false);
+$("#btnBlockClear").onclick=()=>fillBlock(true);
+$("#btnNew").onclick=async()=>{
+  const m=$("#newMsg"),nama=$("#newName").value.trim().toUpperCase();m.textContent="";
+  if(!nama){m.textContent="Isi nama PPM.";return}
+  const id=nama.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"ppm"+Date.now();
+  if(ppms.some(p=>p.id===id||p.nama===nama)){m.textContent=nama+" sudah ada dalam senarai.";return}
+  try{await setDoc(doc(db,"ppm",id),{nama,aktif:true,slots:{}})}catch(e){m.textContent="Gagal menyimpan: "+e.message;return}
+  $("#newName").value="";await loadPpms();renderPpm();renderDay();openGrid(id);
+};
 $("#btnGridSave").onclick=async()=>{
   if(!gridId)return;
-  const p=ppms.find(x=>x.id===gridId);
-  await setDoc(doc(db,"ppm",gridId),{nama:p.nama,aktif:p.aktif!==false,slots:gridSlots});
-  await loadPpms();renderPpm();renderDay();alert("Jadual disimpan.");
+  const nama=$("#gName").value.trim().toUpperCase();
+  if(!nama)return gmsg("Nama tidak boleh kosong.");
+  if(ppms.some(p=>p.id!==gridId&&p.nama===nama))return gmsg(nama+" sudah ada dalam senarai.");
+  const old=ppms.find(x=>x.id===gridId);
+  try{await setDoc(doc(db,"ppm",gridId),{nama,aktif:old?old.aktif!==false:true,slots:gridSlots})}
+  catch(e){return gmsg("Gagal menyimpan: "+e.message)}
+  await loadPpms();renderPpm();renderDay();gmsg("Jadual disimpan.",true);
 };
 </script>
 </body>
