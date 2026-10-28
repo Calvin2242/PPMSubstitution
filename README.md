@@ -9,7 +9,7 @@ Built with plain HTML and JavaScript (no build step), hosted on GitHub Pages, wi
 | File | Purpose |
 |---|---|
 | `index.html` | The whole app: layout, styles, and logic in one file |
-| `contoh-3-ppm.csv` | Sample timetable for three PPMs, for testing |
+| `contoh-5-ppm.csv` | Sample timetable for five PPMs rotating across three classes, for testing |
 | `firebase-config.js` | Your Firebase settings. Fill in once and keep it when updating `index.html` |
 | `firestore.rules` | Security rules: only signed-in admins can read or write |
 | `README.md` | This file |
@@ -24,6 +24,12 @@ Built with plain HTML and JavaScript (no build step), hosted on GitHub Pages, wi
    - **Tiada ganti**: no substitute because the class is in another activity. A preset note is added.
    - **Pantauan**: monitored by the neighbouring class teacher and PPM. A preset note is added.
 5. Notes can be edited freely. Click **Simpan** to keep the day, then **Cetak** to print.
+
+### Checking workload before choosing a substitute
+
+- In the **Gantian** dropdown, each free PPM is listed with their load for the day, for example `PPM SAMPEL 2 (kelas 6, ganti 1, bebas 3)`. This means 6 periods of their own classes, 1 substitution already given today, and 3 periods still free. The list is sorted with the lightest workload first.
+- Below the list, **Pratonton beban PPM hari ini** shows every active PPM across the day's periods: their own class in each period, substitutions already chosen (yellow, with a +), and free periods (blank). The Bebas column turns red when a PPM has 2 or fewer free periods left. To change that limit, edit `HAD_PADAT` near the top of the script in `index.html`.
+- The table updates as you pick substitutes, so you can spread the extra work evenly.
 
 Periods: Monday to Thursday have periods 1-10, and Friday has periods 1-8. Each period is 30 minutes.
 
@@ -60,7 +66,7 @@ Go to the **PPM dan jadual** tab and use **Muat turun sampel CSV** to get a temp
 | `mula` | First period of the lesson block |
 | `tamat` | Last period of the lesson block |
 | `kelas` | Class name, e.g. `BIJAK` or `CEKAL KSSM 5` |
-| `subjek` | Subject code, e.g. `PK`, `PM`, `KOM` |
+| `subjek` | Optional. Leave empty if not needed, or use a subject code such as `PK` |
 
 One row is one lesson block. A class that runs from period 4 to 6 is a single row with `mula` 4 and `tamat` 6.
 
@@ -88,7 +94,7 @@ Rules:
 
 ### Sample data
 
-`contoh-3-ppm.csv` has three sample PPMs (PPM SAMPEL 1 to 3) covering the classes BIJAK, RAJIN and CEKAL KSSM 5, with no clashes and some free periods for testing substitutions. Upload it from the **PPM dan jadual** tab. Delete the three samples before you load real timetables.
+`contoh-5-ppm.csv` has five sample PPMs (PPM SAMPEL 1 to 5) who rotate through the classes CEKAL, BIJAK and RAJIN. Every period has one PPM in each of the three classes, and the other two PPMs are free, so you can test the substitute dropdown. The `subjek` column is left empty because PPMs do not teach a subject. Upload it from the **PPM dan jadual** tab. Delete the five samples before you load real timetables.
 
 Untick **Aktif** for a PPM who has left or is on long leave. They will no longer appear as a substitute or in the absent list, but their timetable is kept.
 

@@ -47,6 +47,13 @@ td input,td select{width:100%}
  #printArea th{background:none}
  #printArea td.nm{font-weight:700;font-size:13pt;border-right:0}
 }
+.ld{font-size:12px}
+.ld th,.ld td{padding:3px 5px;text-align:center;white-space:nowrap}
+.ld td:first-child,.ld th:first-child{text-align:left}
+.ld .fr{background:#f6f8f5}
+.ld .sub{background:#fff1b8;font-weight:600}
+.ld tr.abs td{color:#999;text-decoration:line-through;background:#f1f1f1}
+.ld .pad{background:#f9d6d2;color:var(--warn);font-weight:600}
 </style>
 </head>
 <body>
@@ -94,6 +101,11 @@ td input,td select{width:100%}
       </div>
       <div class="scroll" id="rowsBox"></div>
       <p class="mut" id="saveMsg"></p>
+    </div>
+    <div class="card" id="loadCard" hidden>
+      <h2>Pratonton beban PPM hari ini</h2>
+      <p class="mut">Setiap sel ialah kelas PPM pada waktu itu. Sel kuning dengan tanda + ialah gantian yang sudah dipilih. Sel kosong bermakna bebas. Lajur Bebas berwarna merah bermakna waktu bebas tinggal 2 atau kurang.</p>
+      <div class="scroll" id="loadBox"></div>
     </div>
   </section>
 
@@ -192,6 +204,32 @@ async function loadDay(){
 $("#dt").onchange=loadDay;
 
 /* ---------- Harian ---------- */
+const HAD_PADAT=2; // waktu bebas sebanyak ini atau kurang ditandakan merah
+function beban(p){
+  const d=dayKey(),own=Object.keys(p.slots||{}).filter(k=>k.startsWith(d+"-")).length,
+    extra=cur.rows.filter(r=>r.jenis==="ganti"&&r.gantian===p.nama).length;
+  return {own,extra,free:maxP(d)-own-extra};
+}
+function renderLoad(){
+  const d=dayKey();
+  if(!d||!ppms.length){$("#loadCard").hidden=true;return}
+  $("#loadCard").hidden=false;
+  const n=maxP(d),abs=cur.absent.map(a=>a.ppm);
+  let h='<table class="ld"><thead><tr><th>PPM</th>';
+  for(let t=1;t<=n;t++)h+=`<th>${t}</th>`;
+  h+="<th>Kelas</th><th>Ganti</th><th>Bebas</th></tr></thead><tbody>";
+  ppms.filter(p=>p.aktif!==false).forEach(p=>{
+    const b=beban(p),isAbs=abs.includes(p.nama);
+    h+=`<tr class="${isAbs?"abs":""}"><td>${esc(p.nama)}${isAbs?" (tidak hadir)":""}</td>`;
+    for(let t=1;t<=n;t++){
+      const s=p.slots&&p.slots[`${d}-${t}`],g=cur.rows.find(r=>r.jenis==="ganti"&&r.gantian===p.nama&&r.waktu===t);
+      h+=g?`<td class="sub" title="Ganti ${esc(g.ppm)}">+${esc(g.kelas)}</td>`:s?`<td>${esc(s.kelas)}</td>`:'<td class="fr"></td>';
+    }
+    h+=isAbs?'<td colspan="3"></td>':`<td>${b.own}</td><td>${b.extra}</td><td class="${b.free<=HAD_PADAT?"pad":""}">${b.free}</td>`;
+    h+="</tr>";
+  });
+  $("#loadBox").innerHTML=h+"</tbody></table>";
+}
 function renderDay(){
   const d=dayKey();
   $("#dayInfo").textContent=d?DM[d]+", waktu 1 hingga "+maxP(d):"Hujung minggu: tiada jadual PPM.";
@@ -202,14 +240,15 @@ function renderDay(){
   document.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{
     const a=cur.absent.splice(+b.dataset.rm,1)[0];cur.rows=cur.rows.filter(r=>r.ppm!==a.ppm);renderDay();
   });
+  renderLoad();
   if(!cur.rows.length){$("#rowsBox").innerHTML='<p class="mut">Tambah PPM yang tidak hadir untuk menjana senarai gantian.</p>';return}
   $("#rowsBox").innerHTML=`<table><thead><tr><th>Tidak hadir</th><th>Waktu</th><th>Subjek</th><th>Kelas</th><th>Jenis</th><th>Gantian</th><th>Nota</th></tr></thead><tbody>`+
   cur.rows.map((r,i)=>{
-    const opts=freePpms(r);
-    if(r.gantian&&!opts.some(p=>p.nama===r.gantian))opts.unshift({nama:r.gantian});
+    const opts=freePpms(r).sort((a,b)=>{const x=beban(a),y=beban(b);return (x.own+x.extra)-(y.own+y.extra)||a.nama.localeCompare(b.nama)});
+    if(r.gantian&&!opts.some(p=>p.nama===r.gantian))opts.unshift(ppms.find(x=>x.nama===r.gantian)||{nama:r.gantian});
     return `<tr><td>${esc(r.ppm)}</td><td>${r.waktu}</td><td>${esc(r.subjek)}</td><td>${esc(r.kelas)}</td>
     <td><select data-i="${i}" data-f="jenis"><option value="ganti"${r.jenis==="ganti"?" selected":""}>Ganti</option><option value="tiada"${r.jenis==="tiada"?" selected":""}>Tiada ganti</option><option value="pantau"${r.jenis==="pantau"?" selected":""}>Pantauan</option></select></td>
-    <td><select data-i="${i}" data-f="gantian" ${r.jenis!=="ganti"?"disabled":""}><option value="">Pilih</option>${opts.map(p=>`<option${p.nama===r.gantian?" selected":""}>${esc(p.nama)}</option>`).join("")}</select></td>
+    <td><select data-i="${i}" data-f="gantian" ${r.jenis!=="ganti"?"disabled":""}><option value="">Pilih</option>${opts.map(p=>{const b=beban(p);return `<option value="${esc(p.nama)}"${p.nama===r.gantian?" selected":""}>${esc(p.nama)} (kelas ${b.own}, ganti ${b.extra}, bebas ${b.free})</option>`}).join("")}</select></td>
     <td><input data-i="${i}" data-f="nota" value="${esc(r.nota)}"></td></tr>`}).join("")+"</tbody></table>";
   document.querySelectorAll("#rowsBox [data-f]").forEach(el=>el.onchange=()=>{
     const r=cur.rows[+el.dataset.i],f=el.dataset.f;r[f]=el.value;
