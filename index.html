@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jadual Penggantian PPM – PPKI</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="login" class="card" hidden>
+  <h2>Log masuk admin</h2>
+  <input id="em" type="email" placeholder="E-mel" autocomplete="username">
+  <input id="pw" type="password" placeholder="Kata laluan" autocomplete="current-password">
+  <button class="p" id="btnLogin">Log masuk</button>
+  <p class="err" id="loginErr"></p>
+</div>
+
+<header id="top" hidden>
+  <h1>Jadual Penggantian PPM – PPKI SMK Tansau</h1>
+  <nav>
+    <button data-tab="harian" class="on">Gantian harian</button>
+    <button data-tab="ppm">PPM dan jadual</button>
+  </nav>
+  <button id="btnOut">Log keluar</button>
+</header>
+
+<main id="app" hidden>
+  <section id="tab-harian">
+    <div class="card">
+      <div class="row">
+        <label for="dt"><b>Tarikh</b></label>
+        <input id="dt" type="date">
+        <span id="dayInfo" class="mut"></span>
+      </div>
+      <div id="absBox">
+        <div class="row">
+          <select id="absSel"></select>
+          <input id="absWhy" list="whyList" placeholder="Alasan (cth: APC)">
+          <datalist id="whyList"><option>APC</option><option>Cuti sakit</option><option>Latihan Intensif SKM</option><option>Kursus</option></datalist>
+          <button class="p" id="btnAbs">Tambah PPM tidak hadir</button>
+        </div>
+        <div class="row" id="absChips"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row">
+        <h2 style="margin:0;flex:1">Senarai gantian</h2>
+        <button id="btnSave">Simpan</button>
+        <button class="p" id="btnPrint">Cetak</button>
+      </div>
+      <div class="scroll" id="rowsBox"></div>
+      <p class="mut" id="saveMsg"></p>
+    </div>
+  </section>
+
+  <section id="tab-ppm" hidden>
+    <div class="card">
+      <h2>Muat naik jadual (CSV)</h2>
+      <p class="mut">Lajur: nama, hari, mula, tamat, kelas, subjek. Satu baris untuk satu blok pelajaran. Jadual PPM yang ada dalam fail akan diganti; PPM lain tidak diubah.</p>
+      <div class="row">
+        <input type="file" id="csvFile" accept=".csv,text/csv">
+        <button class="p" id="btnImport">Muat naik</button>
+        <button id="btnSample">Muat turun sampel CSV</button>
+        <button id="btnExport">Eksport semua jadual</button>
+      </div>
+      <p class="err" id="impMsg"></p>
+    </div>
+    <div class="card">
+      <h2>Senarai PPM</h2>
+      <div class="scroll" id="ppmList"></div>
+    </div>
+    <div class="card" id="gridCard" hidden>
+      <div class="row"><h2 id="gridTitle" style="margin:0;flex:1"></h2><button class="p" id="btnGridSave">Simpan jadual</button></div>
+      <p class="mut">Isi sel dengan KELAS | SUBJEK, contoh: BIJAK | PK. Kosongkan untuk padam.</p>
+      <div class="scroll" id="gridBox"></div>
+    </div>
+  </section>
+</main>
+
+<div id="printArea"></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
