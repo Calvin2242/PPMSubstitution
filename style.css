@@ -1,5 +1,6 @@
 :root{--bg:#f3f4ef;--card:#fff;--ink:#1c2a25;--mut:#64706b;--line:#d5dad4;--pri:#1f6b4a;--hl:#f2c94c;--warn:#b42318}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{margin:0;font:15px/1.5 "Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink)}
 header{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:10px 20px;background:var(--pri);color:#fff;border-bottom:4px solid var(--hl)}
 header h1{font-size:17px;margin:0;flex:1;font-weight:600}
